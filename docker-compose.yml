@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  qikfiller:
+    build: .
+    image: joshainglis/qikfiller
+    environment:
+      - QIK_API_KEY
+      - QIK_URL
