@@ -1,6 +1,8 @@
 from marshmallow import fields
 
-from qikfiller.schemas.lists import BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, obj_classes
+from qikfiller.schemas.lists import (
+    BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, register_class,
+)
 
 
 class TaskSchema(BaseSchema):
@@ -22,13 +24,12 @@ class TasksSchema(BaseCollectionSchema):
     tasks = fields.List(fields.Nested(TaskSchema))
 
 
+@register_class
 class Task(BaseObj):
     _SCHEMA = TaskSchema
 
 
-obj_classes['Task'] = Task
-
-
+@register_class
 class Tasks(BaseCollectionObject):
     _SCHEMA = TasksSchema
 
@@ -37,6 +38,3 @@ class Tasks(BaseCollectionObject):
             s = '{:<3}: {}'.format(x.id, x.name)
             print('{}{}'.format(' ' * indent, s))
             Tasks(x.sub_tasks).list_all(indent=indent + 2)
-
-
-obj_classes['Tasks'] = Tasks

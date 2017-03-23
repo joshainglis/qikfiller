@@ -3,6 +3,10 @@ from marshmallow import Schema, post_load
 obj_classes = {}
 
 
+def register_class(cls):
+    obj_classes[cls.__name__] = cls
+
+
 class BaseSchema(Schema):
     LOAD_INTO = None
 

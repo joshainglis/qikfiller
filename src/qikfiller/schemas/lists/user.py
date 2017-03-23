@@ -1,6 +1,8 @@
 from marshmallow import fields
 
-from qikfiller.schemas.lists import BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, obj_classes
+from qikfiller.schemas.lists import (
+    BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, register_class,
+)
 
 
 class UserSchema(BaseSchema):
@@ -26,16 +28,11 @@ class UsersSchema(BaseCollectionSchema):
     users = fields.Nested(UserSchema, many=True)
 
 
+@register_class
 class User(BaseObj):
     _SCHEMA = UserSchema
 
 
-obj_classes['User'] = User
-
-
+@register_class
 class Users(BaseCollectionObject):
     _SCHEMA = UsersSchema
-    pass
-
-
-obj_classes['Users'] = Users

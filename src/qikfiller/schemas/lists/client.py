@@ -1,6 +1,9 @@
 from marshmallow import fields
 
-from qikfiller.schemas.lists import BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, obj_classes
+from qikfiller.schemas.lists import (
+    BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, obj_classes,
+    register_class,
+)
 from qikfiller.schemas.lists.task import TaskSchema
 
 
@@ -21,6 +24,7 @@ class ClientsSchema(BaseCollectionSchema):
     clients = fields.Nested(ClientSchema, many=True)
 
 
+@register_class
 class Client(BaseObj):
     _SCHEMA = ClientSchema
 
@@ -29,12 +33,6 @@ class Client(BaseObj):
         self.tasks = obj_classes['Tasks'](tasks) if tasks is not None else None
 
 
-obj_classes['Client'] = Client
-
-
+@register_class
 class Clients(BaseCollectionObject):
     _SCHEMA = ClientsSchema
-    pass
-
-
-obj_classes['Clients'] = Clients
