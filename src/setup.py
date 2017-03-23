@@ -15,7 +15,13 @@ setup(
     author='Josha Inglis',
     author_email='josha.inglis@biarri.com',
     description='Faster way to fill qiktimes timesheets',
-    requires=extract_requirements('requirements.txt'),
+    requires=[
+        'requests',
+        'PyYAML',
+        'marshmallow',
+        'fire',
+        'dateutil',
+    ],
     classifiers=[
         'Intended Audience :: Developers',
         'License :: MIT',
