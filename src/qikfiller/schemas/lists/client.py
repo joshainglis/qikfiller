@@ -22,7 +22,7 @@ class ClientSchema(BaseSchema):
             data["custom_fields"] = '|'.join(data["custom_fields"])
         except KeyError:
             pass
-        return super().to_obj(data)
+        return super(ClientSchema, self).to_obj(data)
 
 
 class ClientsSchema(BaseCollectionSchema):

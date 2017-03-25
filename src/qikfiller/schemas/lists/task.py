@@ -23,7 +23,7 @@ class TaskSchema(BaseSchema):
             data["custom_fields"] = '|'.join(data["custom_fields"])
         except KeyError:
             pass
-        return super().to_obj(data)
+        return super(TaskSchema, self).to_obj(data)
 
 
 class TasksSchema(BaseCollectionSchema):

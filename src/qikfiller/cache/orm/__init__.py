@@ -11,7 +11,7 @@ Base = declarative_base()
 
 db_path = join(config_path, 'cache.db')
 
-engine = create_engine(f'sqlite:///{db_path}')
+engine = create_engine('sqlite:///{db_path}'.format(db_path=db_path))
 
 
 class Simple(object):
@@ -19,10 +19,10 @@ class Simple(object):
     name = Column(String)
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(id={self.id}, name={self.name})'
+        return '{self.__class__.__name__}(id={self.id}, name={self.name})'.format(self=self)
 
     def __str__(self) -> str:
-        return f'{self.name} | {self.id} ({self.__class__.__name__})'
+        return '{self.name} | {self.id} ({self.__class__.__name__})'.format(self=self)
 
 
 class HasOwner(object):
