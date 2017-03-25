@@ -21,6 +21,7 @@ setup(
         'marshmallow',
         'fire',
         'dateutil',
+        'SQLAlchemy',
     ],
     classifiers=[
         'Intended Audience :: Developers',
