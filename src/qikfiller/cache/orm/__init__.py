@@ -1,17 +1,15 @@
-from os import mkdir
-from os.path import abspath, exists, expanduser, join
+from os.path import join
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import RelationshipProperty, backref
+from sqlalchemy.orm import RelationshipProperty, backref, scoped_session, sessionmaker
+
+from qikfiller import config_path
+from qikfiller.schemas.lists import register_class
 
 Base = declarative_base()
 
-qf_path = join(abspath(expanduser('~')), '.qikfiller')
-if not exists(qf_path):
-    mkdir(qf_path)
-
-db_path = join(qf_path, 'cache.db')
+db_path = join(config_path, 'cache.db')
 
 engine = create_engine(f'sqlite:///{db_path}')
 
@@ -20,19 +18,28 @@ class Simple(object):
     id = Column(Integer, primary_key=True)
     name = Column(String)
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(id={self.id}, name={self.name})'
+
+    def __str__(self) -> str:
+        return f'{self.name} | {self.id} ({self.__class__.__name__})'
+
 
 class HasOwner(object):
     owner_id = Column(Integer)
     owner_name = Column(String)
 
 
+@register_class
 class Category(Base, Simple):
     __tablename__ = 'categories'
 
 
+@register_class
 class Task(Base, Simple, HasOwner):
     __tablename__ = 'tasks'
 
+    id = Column(Integer, primary_key=True)
     custom_fields = Column(String)
     archived = Column(Boolean)
     estimated_hours = Column(Integer)
@@ -43,6 +50,7 @@ class Task(Base, Simple, HasOwner):
     sub_tasks = RelationshipProperty("Task", backref=backref('parent', remote_side=[id]))
 
 
+@register_class
 class Client(Base, Simple, HasOwner):
     __tablename__ = 'clients'
 
@@ -50,12 +58,14 @@ class Client(Base, Simple, HasOwner):
     tasks = RelationshipProperty('Task')
 
 
+@register_class
 class TagType(Base, Simple):
     __tablename__ = 'tag_types'
 
     description = Column(String)
 
 
+@register_class
 class Type(Base, Simple):
     __tablename__ = 'types'
 
@@ -64,6 +74,7 @@ class Type(Base, Simple):
     user_creatable = Column(Boolean)
 
 
+@register_class
 class User(Base, Simple):
     __tablename__ = 'users'
 
@@ -77,3 +88,7 @@ class User(Base, Simple):
     updated_at = Column(DateTime)
     last_login = Column(DateTime)
     created_at = Column(DateTime)
+
+
+Session = scoped_session(sessionmaker())
+Session.configure(bind=engine)

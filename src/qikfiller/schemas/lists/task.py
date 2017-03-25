@@ -1,7 +1,7 @@
-from marshmallow import fields
+from marshmallow import fields, post_load
 
 from qikfiller.schemas.lists import (
-    BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, register_class,
+    BaseCollectionObject, BaseCollectionSchema, BaseSchema, register_class,
 )
 
 
@@ -17,16 +17,19 @@ class TaskSchema(BaseSchema):
     estimated_hours = fields.Integer(allow_none=True)
     sub_tasks = fields.Nested('TaskSchema', many=True)
 
+    @post_load
+    def to_obj(self, data):
+        try:
+            data["custom_fields"] = '|'.join(data["custom_fields"])
+        except KeyError:
+            pass
+        return super().to_obj(data)
+
 
 class TasksSchema(BaseCollectionSchema):
     LOAD_INTO = 'Tasks'
 
     tasks = fields.List(fields.Nested(TaskSchema))
-
-
-@register_class
-class Task(BaseObj):
-    _SCHEMA = TaskSchema
 
 
 @register_class

@@ -1,6 +1,6 @@
 from marshmallow import fields
 
-from qikfiller.schemas.lists import BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, register_class
+from qikfiller.schemas.lists import BaseCollectionObject, BaseCollectionSchema, BaseSchema, register_class
 
 
 class TagTypeSchema(BaseSchema):
@@ -16,11 +16,6 @@ class TagTypesSchema(BaseCollectionSchema):
     KEY = 'tag_types'
 
     tag_types = fields.Nested(TagTypeSchema, many=True)
-
-
-@register_class
-class TagType(BaseObj):
-    _SCHEMA = TagTypeSchema
 
 
 @register_class

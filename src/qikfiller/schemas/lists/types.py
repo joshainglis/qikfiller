@@ -1,7 +1,7 @@
 from marshmallow import fields
 
 from qikfiller.schemas.lists import (
-    BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, register_class,
+    BaseCollectionObject, BaseCollectionSchema, BaseSchema, register_class,
 )
 
 
@@ -20,11 +20,6 @@ class TypesSchema(BaseCollectionSchema):
     KEY = 'types'
 
     types = fields.Nested(TypeSchema, many=True)
-
-
-@register_class
-class Type(BaseObj):
-    _SCHEMA = TypeSchema
 
 
 @register_class

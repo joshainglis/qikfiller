@@ -1,17 +1,20 @@
 import sys
-from datetime import date as date_, datetime, time, timedelta
+from datetime import datetime
 from os import getenv
 from urllib.parse import urljoin
 
 import fire
 import requests
-from dateutil.parser import parse
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.session import Session as SQLASession
 
+from qikfiller.cache.orm import Base, Category, Client, Session, TagType, Task, Type, User, engine
 from qikfiller.schemas.lists.categories import CategoriesSchema
 from qikfiller.schemas.lists.client import ClientsSchema
 from qikfiller.schemas.lists.tag_types import TagTypesSchema
 from qikfiller.schemas.lists.types import TypesSchema
 from qikfiller.schemas.lists.user import UsersSchema
+from qikfiller.utils.date_time import parse_date, parse_time, to_timedelta
 
 QIK_API_KEY = getenv('QIK_API_KEY')
 QIK_URL = getenv('QIK_URL')
@@ -21,6 +24,7 @@ class QikFiller(object):
     def __init__(self, apikey=None, qik_url=None):
         self.apikey = self._validate_api_key(apikey)
         self.qik_url = self._validate_url(qik_url)
+        self._session: SQLASession = Session()
 
     @staticmethod
     def _validate_api_key(apikey):
@@ -42,82 +46,109 @@ class QikFiller(object):
         response = requests.get(urljoin(self.qik_url, '{}.json'.format(type_)), params={'api_key': self.apikey}).json()
         return response
 
-    def clients(self, name=None, id=None):
-        data = self._get_data('clients')
-        clients = ClientsSchema(strict=True).load(data).data
-        if name is not None:
-            return clients.from_name(name)
-        elif id is not None:
-            return clients.from_id(id)
-        else:
-            return clients
+    def init(self):
+        Base.metadata.create_all(engine)
+        return self
 
-    def tasks(self):
-        data = self._get_data('tasks')
-        clients = ClientsSchema(strict=True).load(data).data
-        return clients
+    def load(self):
+        users = UsersSchema(strict=True).load(self._get_data('users')).data.users
+        for user in users:
+            self._session.merge(user)
+
+        tag_types = TagTypesSchema(strict=True).load(self._get_data('tag_types')).data.tagtypes
+        for tag_type in tag_types:
+            self._session.merge(tag_type)
+
+        types = TypesSchema(strict=True).load(self._get_data('types')).data.types
+        for type_ in types:
+            self._session.merge(type_)
+
+        categories = CategoriesSchema(strict=True).load(self._get_data('categories')).data.categories
+        for category in categories:
+            self._session.merge(category)
+
+        clients = ClientsSchema(strict=True).load(self._get_data('tasks')).data.clients
+        for client in clients:
+            self._session.merge(client)
+
+        self._session.commit()
+        return self
+
+    def get_all(self, table):
+        return self._session.query(table).all()
+
+    def clients(self, name=None, id=None):
+        clients = self._session.query(Client) \
+            .options(joinedload('tasks', innerjoin=True).subqueryload('sub_tasks'))
+        if name is not None:
+            clients = clients.filter(Client.name.ilike(f'%{name}%'))
+        if id is not None:
+            clients = clients.filter(Client.id == id)
+        for client in clients.all():
+            print(client)
+            for task in client.tasks:
+                print(f'  {task}')
+                for sub_task in task.sub_tasks:
+                    print(f'    {sub_task}')
+
+    def tasks(self, name=None, id=None):
+        """
+        
+        :param name: (optional) Any part of the task name (case insensitive)
+        :type name: str
+        :param id: (optional) The task id
+        :type id: int
+        """
+        tasks = self._session.query(Task) \
+            .options(joinedload('client')) \
+            .options(joinedload('parent'))
+        if name is not None:
+            tasks = tasks.filter(Task.name.ilike(f'%{name}%'))
+        if id is not None:
+            tasks = tasks.filter(Task.id == id)
+
+        for task in tasks.all():
+            path = [task]
+            t = task
+            while t.client is None:
+                path.insert(0, t.parent)
+                t = t.parent
+            path.insert(0, t.client)
+            indent = ''
+            for p in path:
+                print(f'{indent}{p}')
+                indent += '  '
+                # print(task)
+                # for task in task.tasks:
+                #     print(f'  {task}')
+                #     for sub_task in task.sub_tasks:
+                #         print(f'    {sub_task}')
 
     def users(self):
-        data = self._get_data('users')
-        users = UsersSchema(strict=True).load(data).data
-        return users
+        return self.get_all(User)
 
     def categories(self):
-        data = self._get_data('categories')
-        categories = CategoriesSchema(strict=True).load(data).data
-        return categories
+        return self.get_all(Category)
 
     def tag_types(self):
-        data = self._get_data('tag_types')
-        tag_types = TagTypesSchema(strict=True).load(data).data
-        return tag_types
+        return self.get_all(TagType)
 
     def types(self):
-        data = self._get_data('types')
-        types = TypesSchema(strict=True).load(data).data
-        return types
-
-    def _parse_date(self, d):
-        if isinstance(d, date_):
-            return d
-        if isinstance(d, datetime):
-            return d.date()
-        try:
-            return parse(d)
-        except (ValueError, TypeError):
-            pass
-        if isinstance(d, int):
-            return date_.today() + timedelta(days=d)
-        raise ValueError('Could not parse {} as a date'.format(d))
-
-    def _parse_time(self, t):
-        if isinstance(t, time):
-            return t
-        if isinstance(t, datetime):
-            return t.time()
-        if isinstance(t, int):
-            return time(t)
-        try:
-            return parse(t).time()
-        except:
-            raise ValueError('Could not parse {} as a time'.format(t))
-
-    def _to_timedelta(self, t):
-        return datetime.combine(date_.min, self._parse_time(t)) - datetime.min
+        return self.get_all(Type)
 
     def create(self, type_id, task_id, category_id, start=None, end=None, duration=None, date=0, description="",
                jira_id="",
                user='apiuser'):
-        date = self._parse_date(date)
+        date = parse_date(date)
         if start and end:
-            start = self._parse_time(start)
-            end = self._parse_time(end)
+            start = parse_time(start)
+            end = parse_time(end)
         elif start and duration:
-            start = self._parse_time(start)
-            end = (datetime.combine(date, start) + self._to_timedelta(self._parse_time(duration))).time()
+            start = parse_time(start)
+            end = (datetime.combine(date, start) + to_timedelta(parse_time(duration))).time()
         elif end and duration:
-            end = self._parse_time(end)
-            start = (datetime.combine(date, end) - self._to_timedelta(self._parse_time(duration))).time()
+            end = parse_time(end)
+            start = (datetime.combine(date, end) - to_timedelta(parse_time(duration))).time()
         else:
             raise ValueError("Please provide any two of start, end, duration")
         if start > end:

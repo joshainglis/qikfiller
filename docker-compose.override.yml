@@ -4,4 +4,4 @@ services:
   qikfiller:
     volumes:
       - "./src:/usr/src/app"
-      - "./cache:/usr/local/etc/"
+      - "./cache:/root/.qikfiller"

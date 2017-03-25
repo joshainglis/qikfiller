@@ -1,8 +1,7 @@
-from marshmallow import fields
+from marshmallow import fields, post_load
 
 from qikfiller.schemas.lists import (
-    BaseCollectionObject, BaseCollectionSchema, BaseObj, BaseSchema, obj_classes,
-    register_class,
+    BaseCollectionObject, BaseCollectionSchema, BaseSchema, register_class,
 )
 from qikfiller.schemas.lists.task import TaskSchema
 
@@ -17,20 +16,19 @@ class ClientSchema(BaseSchema):
     custom_fields = fields.List(fields.String())
     tasks = fields.Nested(TaskSchema, many=True)
 
+    @post_load
+    def to_obj(self, data):
+        try:
+            data["custom_fields"] = '|'.join(data["custom_fields"])
+        except KeyError:
+            pass
+        return super().to_obj(data)
+
 
 class ClientsSchema(BaseCollectionSchema):
     LOAD_INTO = 'Clients'
 
     clients = fields.Nested(ClientSchema, many=True)
-
-
-@register_class
-class Client(BaseObj):
-    _SCHEMA = ClientSchema
-
-    def __init__(self, id, name, tasks=None, **kwargs):
-        super().__init__(id, name, **kwargs)
-        self.tasks = obj_classes['Tasks'](tasks) if tasks is not None else None
 
 
 @register_class
