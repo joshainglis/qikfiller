@@ -1,7 +1,7 @@
 import sys
 from datetime import datetime
 from os import getenv
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 import fire
 import requests
@@ -18,6 +18,46 @@ from qikfiller.utils.date_time import parse_date, parse_time, to_timedelta
 
 QIK_API_KEY = getenv('QIK_API_KEY')
 QIK_URL = getenv('QIK_URL')
+
+
+def get_field(session, table, field):
+    if not isinstance(field, int):
+        fields = session.query(table).filter(table.name.ilike(f'%{field}%')).all()
+        if len(fields) == 0:
+            print(f'Could not find any {table.__tablename__} matching "{field}"')
+            sys.exit(1)
+        elif len(fields) > 1:
+            t = [(f'{field_.id}', f'{field_.name}') for field_ in fields]
+            l = [max(len(x[y]) for x in t) for y in range(len(t[0]))]
+            for type_ in t:
+                print('{{0:<{0}s}}: {{1:<{1}s}}'.format(*l).format(*type_))
+            field = int(input(f'Please enter the id of desired {table.__class__.__name__.lower()} from above: '))
+        else:
+            field = fields[0].id
+    return field
+
+
+def get_task_field(session, task_id):
+    if not isinstance(task_id, int):
+        task_id_split = task_id.split(':')
+        if task_id_split[-1]:
+            tasks = session.query(Task).filter(Task.name.ilike(f'%{task_id_split[-1]}%')).all()
+        else:
+            tasks = session.query(Task).all()
+        if len(task_id_split) == 2:
+            tasks = [task for task in tasks if task_id_split[0].lower() in task.get_client().name.lower()]
+        if len(tasks) == 0:
+            print(f'Could not find any task matching "{task_id}"')
+            sys.exit(1)
+        elif len(tasks) > 1:
+            t = [(f'{type_.id}', f'{type_.get_client().name}', f'{type_.name}') for type_ in tasks]
+            l = [max(len(x[y]) for x in t) for y in range(len(t[0]))]
+            for type_ in t:
+                print('{{0:<{0}s}}: {{1:<{1}s}}: {{2:<{2}s}}'.format(*l).format(*type_))
+            task_id = int(input(f'Please enter the id of desired task from above: '))
+        else:
+            task_id = tasks[0].id
+    return task_id
 
 
 class QikFiller(object):
@@ -137,8 +177,7 @@ class QikFiller(object):
         return self.get_all(Type)
 
     def create(self, type_id, task_id, category_id, start=None, end=None, duration=None, date=0, description="",
-               jira_id="",
-               user='apiuser'):
+               jira_id="", user='apiuser', dry=False):
         date = parse_date(date)
         if start and end:
             start = parse_time(start)
@@ -152,7 +191,11 @@ class QikFiller(object):
         else:
             raise ValueError("Please provide any two of start, end, duration")
         if start > end:
-            raise ValueError('Start time {} is after end time {}.'.format(start, end))
+            raise ValueError(f'Start time {start} is after end time {end}.')
+
+        type_id = get_field(self._session, Type, type_id)
+        task_id = get_task_field(self._session, task_id)
+        category_id = get_field(self._session, Category, category_id)
 
         data = {
             'api_key': self.apikey,
@@ -166,10 +209,13 @@ class QikFiller(object):
             'entry[jira_id]': jira_id,
         }
 
-        response = requests.post(urljoin(self.qik_url, 'entries.json'), params=data)
-        print(response.url)
-        print(response.status_code)
-        print(response.content)
+        if dry:
+            return data
+        else:
+            response = requests.post(urljoin(self.qik_url, 'entries.json'), params=data)
+            print(response.url)
+            print(response.status_code)
+            print(response.content)
 
 
 def main():

@@ -49,6 +49,9 @@ class Task(Base, Simple, HasOwner):
     parent_id = Column(Integer, ForeignKey('tasks.id'))
     sub_tasks = RelationshipProperty("Task", backref=backref('parent', remote_side=[id]))
 
+    def get_client(self):
+        return self.client if self.client_id is not None else self.parent.get_client()
+
 
 @register_class
 class Client(Base, Simple, HasOwner):
