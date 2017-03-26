@@ -1,4 +1,4 @@
-from datetime import time, datetime, date, timedelta
+from datetime import date, datetime, time, timedelta
 
 from dateutil.parser import parse
 
@@ -37,6 +37,8 @@ def parse_date(d):
 
 
 def get_start_end(date_, start, end, duration):
+    if start and not any([date_, end, duration]):
+        end = datetime.now().time()
     date_ = parse_date(date_)
     if start and end:
         start = parse_time(start)
