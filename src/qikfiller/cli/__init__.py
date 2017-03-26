@@ -110,17 +110,8 @@ class QikFiller(object):
                types=ALL, clients=ALL, tasks=ALL, categories=ALL,
                limit=1000, date_type='created', description=None, jira_id=None, user='apiuser', dry=False):
         """
-        http://biarrioptimisation.qiktimes.com/api/v1/entries/search.json
-        ?api_key=12345
-        &date_range_from=2017-03-15
-        &date_range_to=2017-03-26
-        &rate=All
-        &client=All
-        &task=All
-        &categories=All
-        &users=All
-        &limit=1000
-        &date_type=created_at
+        At time of writing this, the qiktimes search api is borked and returns 500 errors for all queries.
+        So until that is fixed, this is just a placeholder
         """
 
         data = {
