@@ -24,33 +24,6 @@ class BaseCollectionSchema(BaseSchema):
         return obj_classes[self.LOAD_INTO](data[self.KEY if self.KEY is not None else self.LOAD_INTO.lower()])
 
 
-class BaseObj(object):
-    _SCHEMA = None
-
-    def __init__(self, id, name, **kwargs):
-        self.id = id
-        self.name = name
-
-        for field in self._keys():
-            try:
-                setattr(self, field, kwargs[field])
-            except KeyError:
-                pass
-
-    @classmethod
-    def _keys(cls):
-        return cls._SCHEMA._declared_fields.keys()
-
-    def __repr__(self):
-        return "{}({})".format(
-            self.__class__.__name__,
-            ', '.join('{}={}'.format(x, getattr(self, x)) for x in self._keys() if hasattr(self, x))
-        )
-
-    def __str__(self):
-        return "{}-{}".format(self.id, self.name)
-
-
 class BaseCollectionObject(object):
     _SCHEMA = None
 

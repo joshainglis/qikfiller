@@ -28,7 +28,7 @@ def parse_date(d):
         # noinspection PyArgumentList
         return d.date()
     try:
-        return parse(d)
+        return parse(d, dayfirst=True)
     except (ValueError, TypeError):
         pass
     if isinstance(d, int):
