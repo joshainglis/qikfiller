@@ -19,7 +19,6 @@ setup(
         'dateutil',
         'fire',
         'marshmallow',
-        'PyYAML',
         'requests',
         'six',
         'SQLAlchemy',

@@ -1,7 +1,6 @@
 fire
 marshmallow
 python-dateutil
-PyYAML
 requests
 six
 SQLAlchemy
