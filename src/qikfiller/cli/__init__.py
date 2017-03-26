@@ -20,6 +20,10 @@ from qikfiller.utils.validation import (
 )
 
 
+def get_all_rows(session, table):
+    return session.query(table).all()
+
+
 class QikFiller(object):
     """
     Fill out QikTimesheets... Qikker!
@@ -66,41 +70,18 @@ class QikFiller(object):
             self._session.merge(client)
 
         self._session.commit()
-        return self
+        print('Successfully loaded data from {api_url}'.format(api_url=self.qik_api_url))
 
-    def get_all(self, table):
-        return self._session.query(table).all()
+    def clients(self):
+        return get_all_rows(self._session, Client)
 
-    def clients(self, name=None, id=None):
-        clients = self._session.query(Client) \
-            .options(joinedload('tasks', innerjoin=True).subqueryload('sub_tasks'))
-        if name is not None:
-            clients = clients.filter(Client.name.ilike('%{name}%'.format(name=name)))
-        if id is not None:
-            clients = clients.filter(Client.id == id)
-        for client in clients.all():
-            print(client)
-            for task in client.tasks:
-                print('  {task}'.format(task=task))
-                for sub_task in task.sub_tasks:
-                    print('    {sub_task}'.format(sub_task=sub_task))
-
-    def tasks(self, name=None, id=None):
+    def tasks(self):
         """
         
-        :param name: (optional) Any part of the task name (case insensitive)
-        :type name: str
-        :param id: (optional) The task id
-        :type id: int
         """
         tasks = self._session.query(Task) \
             .options(joinedload('client')) \
             .options(joinedload('parent'))
-        if name is not None:
-            tasks = tasks.filter(Task.name.ilike('%{name}%'.format(name=name)))
-        if id is not None:
-            tasks = tasks.filter(Task.id == id)
-
         for task in tasks.all():
             path = [task]
             t = task
@@ -114,16 +95,16 @@ class QikFiller(object):
                 indent += '  '
 
     def users(self):
-        return self.get_all(User)
+        return get_all_rows(self._session, User)
 
     def categories(self):
-        return self.get_all(Category)
+        return get_all_rows(self._session, Category)
 
     def tag_types(self):
-        return self.get_all(TagType)
+        return get_all_rows(self._session, TagType)
 
     def types(self):
-        return self.get_all(Type)
+        return get_all_rows(self._session, Type)
 
     def search(self, start=(date.today() - timedelta(weeks=1)), end=date.today(),
                types=ALL, clients=ALL, tasks=ALL, categories=ALL,
@@ -189,4 +170,7 @@ class QikFiller(object):
 
 
 def main():
-    fire.Fire(QikFiller)
+    try:
+        fire.Fire(QikFiller)
+    except (EOFError, KeyboardInterrupt):
+        print('Exiting!')
