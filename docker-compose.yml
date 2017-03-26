@@ -6,4 +6,4 @@ services:
     image: joshainglis/qikfiller
     environment:
       - QIK_API_KEY
-      - QIK_URL
+      - QIK_API_URL

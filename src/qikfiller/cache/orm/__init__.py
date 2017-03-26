@@ -30,6 +30,14 @@ class HasOwner(object):
     owner_name = Column(String)
 
 
+class Profile(Base):
+    __tablename__ = 'profiles'
+
+    id = Column(Integer, primary_key=True)
+    qik_api_key = Column(String)
+    qik_api_url = Column(String)
+
+
 @register_class
 class Category(Base, Simple):
     __tablename__ = 'categories'
