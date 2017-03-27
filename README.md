@@ -4,7 +4,7 @@ qikfiller
 ## Installation
 ```bash
 git clone git@github.com:joshainglis/qikfiller.git
-cd qikfiller
+cd qikfiller/src
 pip install .
 
 # initialise qikfiller
